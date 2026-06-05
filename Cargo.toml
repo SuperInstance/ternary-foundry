@@ -1,0 +1,6 @@
+[package]
+name = "ternary-foundry"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Casting and forging ternary strategies from raw materials through refinement, blending, and hardening"
