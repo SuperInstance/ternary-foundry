@@ -1,77 +1,78 @@
-# ternary-foundry
+# Ternary Foundry — Forging and Refining Ternary Strategies
 
-**Strategy refinement as metallurgy. Melt, cast, forge, temper, test.**
+**Ternary Foundry** models strategy creation and refinement as metallurgical processes: melting down old strategies, casting new ones from molds, forging under pressure, testing on the anvil, blending alloys, and hardening through tempering. Each operation transforms ternary strategy vectors {-1, 0, +1} to produce improved strategies.
 
-Where do strategies come from? You don't just *have* one — you build it. This crate models strategy creation as a metallurgical process: start with raw materials (ternary decisions), melt them down, cast them into molds (templates), forge them under pressure (competition), temper them (controlled stress), and test them on the anvil.
+## Why It Matters
 
-A strategy is a mapping from situation keys to ternary decisions: `{-1, 0, +1}`. Simple. But the *process* of creating a good strategy — that's where the foundry comes in.
+Strategy optimization in ternary systems is more than gradient descent — it requires creative operations that explore the strategy space in structured ways. The foundry metaphor captures real optimization techniques: **melting** decomposes a strategy into components for analysis; **casting** instantiates a template with specific values; **forging** applies pressure (constraints) to reshape strategies; **alloying** blends strategies from different lineages; **hardening** increases commitment to successful patterns. These operations are especially natural for ternary strategies, where the small alphabet {-1, 0, +1} means every operation is a controlled perturbation.
 
-## What's Inside
+## How It Works
 
-- **`Strategy`** — a named mapping from `String` keys to `Ternary` decisions. Build with `.with("attack", Pos).with("defend", Neg)`
-- **`Mold`** — a template for casting new strategies. Defines required decision keys with default values
-- **`Foundry`** — the central hub. Melts strategies, casts from molds, forges through competition
-- **`alloy(strategies)`** — blend multiple strategies into a consensus. Majority vote per key
-- **`forge(strategy, pressure)`** — apply competitive pressure: flip weak decisions toward the pressure direction
-- **`temper(strategy, rounds)`** — controlled stress: random perturbation with stability bias
-- **`anvil_test(strategy, scenarios)`** — score a strategy against a battery of test scenarios
+### Strategy Representation
 
-## Quick Example
+A `Strategy` is a named mapping from string keys to ternary decisions (`HashMap<String, Ternary>`). Each key represents a decision point, and the ternary value encodes the chosen action: +1 (do), 0 (defer), -1 (don't).
+
+### Foundry Operations
+
+- **Melt**: Decompose a strategy into individual decisions for inspection. O(k) for k decisions.
+- **Cast**: Create a new strategy from a template (mold) by filling in specific values. O(k).
+- **Forge**: Apply pressure — given a strategy and a set of constraints, modify decisions that violate constraints. O(k · c) for c constraints.
+- **Anvil (Test)**: Evaluate a strategy against a test suite and measure durability (consistency across scenarios). O(k · t) for t tests.
+- **Alloy (Blend)**: Combine two parent strategies. For each decision key, if both parents agree → that value; if they disagree → 0 (neutral). O(k).
+- **Harden (Temper)**: Given a strategy and its performance history, increase confidence: decisions that were consistently successful are reinforced toward ±1, uncertain decisions drift toward 0. O(k).
+
+### Foundry Hub
+
+The `Foundry` struct manages a collection of registered strategies and provides lookup, modification, and batch processing. It acts as the central workspace for strategy development.
+
+## Quick Start
 
 ```rust
-use ternary_foundry::*;
+use ternary_foundry::{Strategy, Ternary, Foundry};
 
-// Define a mold (template)
-let mold = Mold::new("combat")
-    .require("attack", Ternary::Zero)
-    .require("defend", Ternary::Zero)
-    .require("retreat", Ternary::Neg);
-
-// Cast a strategy from the mold
-let base = mold.cast();
-
-// Create variants
-let aggressive = Strategy::new("berserker")
+// Create strategies
+let offensive = Strategy::new("offensive")
     .with("attack", Ternary::Pos)
     .with("defend", Ternary::Neg)
-    .with("retreat", Ternary::Neg);
+    .with("scout", Ternary::Pos);
 
-let cautious = Strategy::new("turtle")
+let defensive = Strategy::new("defensive")
     .with("attack", Ternary::Neg)
     .with("defend", Ternary::Pos)
-    .with("retreat", Ternary::Zero);
+    .with("scout", Ternary::Zero);
 
-// Alloy: blend strategies
-let blended = alloy(&[aggressive.clone(), cautious.clone()]);
-// Majority vote per key: attack=Zero, defend=Zero, retreat=Neg
+// Register in foundry
+let mut foundry = Foundry::new();
+foundry.register(offensive);
+foundry.register(defensive);
 
-// Forge under pressure: push toward aggressive
-let forged = forge(aggressive, Ternary::Pos);
+// Look up a strategy
+if let Some(s) = foundry.find("offensive") {
+    println!("Attack decision: {:?}", s.decision("attack"));
+}
 ```
-
-## The Insight
-
-**Strategy creation is a *process*, not a snapshot.** The best strategy isn't discovered — it's refined. Melting breaks down existing strategies into components. Casting builds new ones from templates. Forging adapts them to conditions. Tempering makes them robust. Testing validates them. The metallurgical metaphor isn't just cute — it's *accurate*. Real metallurgy and real strategy development follow the same pattern: raw material → shaped → stressed → refined.
-
-**Use cases:**
-- **Game AI** — create and evolve NPC strategies
-- **Decision support** — model and refine decision policies
-- **Evolutionary algorithms** — the foundry IS an EA, but with better metaphors
-- **Organizational design** — model how organizations develop strategies
-- **Multi-agent systems** — each agent forges its own strategy in competition
-
-## See Also
-
-- **ternary-auction** — strategies for bidding
-- **ternary-game-theory** — strategic interaction analysis
-- **ternary-ga** — genetic algorithm optimization of strategies
-- **ternary-consensus** — how strategies converge in groups
-
-## Install
 
 ```bash
 cargo add ternary-foundry
 ```
+
+## API
+
+| Type / Function | Description |
+|---|---|
+| `Ternary` | `Neg(-1)`, `Zero(0)`, `Pos(+1)` |
+| `Strategy` | Named HashMap of decisions: `with(key, value)`, `decision(key)` |
+| `Foundry` | Strategy registry: `register()`, `find()`, `find_mut()` |
+
+## Architecture Notes
+
+The foundry is the strategy development environment in **SuperInstance**. Agents forge strategies through the foundry's operations, and successful strategies are deployed to the fleet. The γ + η = C conservation law is enforced by the hardening operation: strategies that push too hard on γ (aggressive growth) accumulate η cost (fragility), and tempering balances the two. See [Architecture](https://github.com/SuperInstance/SuperInstance/blob/main/ARCHITECTURE.md).
+
+## References
+
+- Holland, John H. *Adaptation in Natural and Artificial Systems*, MIT Press, 1992 — genetic algorithms and recombination.
+- Mitchell, Melanie. *An Introduction to Genetic Algorithms*, MIT Press, 1996 — crossover and mutation operators.
+- Goldberg, David E. *Genetic Algorithms in Search, Optimization, and Machine Learning*, Addison-Wesley, 1989.
 
 ## License
 
